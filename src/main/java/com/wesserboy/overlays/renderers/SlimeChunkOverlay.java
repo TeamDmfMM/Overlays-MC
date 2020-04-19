@@ -1,5 +1,7 @@
 package com.wesserboy.overlays.renderers;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.wesserboy.overlays.config.ConfigHandler;
 import java.util.ArrayList;
 import java.util.Comparator;
 
@@ -7,6 +9,9 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.wesserboy.overlays.helpers.ModRenderHelper;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.RenderTypeBuffers;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.monster.SlimeEntity;
@@ -45,7 +50,7 @@ public class SlimeChunkOverlay {
 			Minecraft mc = Minecraft.getInstance();
 			Entity player = mc.getRenderViewEntity();
 			
-			if(mc.getIntegratedServer() != null){
+			if(mc.getIntegratedServer() != null || ConfigHandler.serverSeed != -1L){
 				ArrayList<Vec3d> positions = calcPositions(mc, player);
 						
 				SlimeEntity fakeSlime = new SlimeEntity(EntityType.SLIME, player.world);
@@ -59,17 +64,21 @@ public class SlimeChunkOverlay {
 						GlStateManager.translated(pos.x, pos.y, pos.z);
 						
 						
-						double pY = player.getEyePosition(event.getPartialTicks()).y;
+						double pY = player.getEyePosition(1).y;
 						
 						GlStateManager.translatef(0, (float) (pY - (fakeSlime.getHeight() / 2) + yOff), 0);
 						GlStateManager.rotatef(rotation, 0F, 1F, 0F);
 						
-						GlStateManager.color4f(1F, 1F, 1F, 0.5F);
+						GlStateManager.color4f(1F, 1F, 1F, 1F);
 						
 						GlStateManager.enableBlend();
-						mc.getRenderManager().renderEntity(fakeSlime, 0, 0, 0, 0F, event.getPartialTicks(), false);
-					    
-					    mc.gameRenderer.disableLightmap();
+
+						int light = mc.getRenderManager().getPackedLight(fakeSlime, event.getPartialTicks());
+						IRenderTypeBuffer.Impl bufferImpl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
+						mc.getRenderManager().renderEntityStatic(fakeSlime, 0, 6, 0, 0F, event.getPartialTicks(), new MatrixStack(), bufferImpl, light);
+					    bufferImpl.finish();
+
+					    mc.gameRenderer.getLightTexture().disableLightmap();
 						
 						
 					GlStateManager.popMatrix();
@@ -111,13 +120,19 @@ public class SlimeChunkOverlay {
 		int maxX = cChunkX + radius;
 		int minZ = cChunkZ - radius;
 		int maxZ = cChunkZ + radius;
-		
-		World world = mc.getIntegratedServer().getWorld(player.world.getDimension().getType());
+
+		Long seed;
+		if(mc.getIntegratedServer() != null) {
+			World world = mc.getIntegratedServer().getWorld(player.world.getDimension().getType());
+			seed = world.getSeed();
+		} else {
+			seed = ConfigHandler.serverSeed;
+		}
 		
 		for(int x = minX; x <= maxX; x++){
 			for(int z = minZ; z <= maxZ; z++){
 				// See SlimeEntity#func_223366_c
-				if(SharedSeedRandom.seedSlimeChunk(x, z, world.getSeed(), 987234911L).nextInt(10) == 0){
+				if(SharedSeedRandom.seedSlimeChunk(x, z, seed, 987234911L).nextInt(10) == 0){
 					positions.add(new Vec3d(x * 16 + 8, 0, z * 16 + 8)); // center of the chunk
 				}
 			}

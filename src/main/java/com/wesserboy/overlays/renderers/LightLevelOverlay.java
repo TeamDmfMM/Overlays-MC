@@ -36,17 +36,18 @@ public class LightLevelOverlay {
 			
 			Entity player = Minecraft.getInstance().getRenderViewEntity();
 			World world = player.world;
-			
+
 			ModRenderHelper.translateToWorldCoords(event.getPartialTicks());
+
 			
 			GlStateManager.disableTexture();
 			GlStateManager.lineWidth(1F);
 			
 			GL11.glBegin(GL11.GL_LINES);
 			
-			int xi = (int) player.posX;
-			int yi = (int) player.posY;
-			int zi = (int) player.posZ;
+			int xi = (int) player.getPosition().getX();
+			int yi = (int) player.getPosition().getY();
+			int zi = (int) player.getPosition().getZ();
 			
 			for(int px = xi - 16; px <= xi + 16; px++){
 				for(int pz = zi - 16; pz <= zi + 16; pz++){
@@ -56,7 +57,7 @@ public class LightLevelOverlay {
 						// Check if this block + the block above are air
 						if(world.getBlockState(pos).getBlock().isAir(world.getBlockState(pos), world, pos) && world.getBlockState(pos.up()).getBlock().isAir(world.getBlockState(pos.up()), world, pos.up())){
 							// Check if the block below is solid on the top
-							if(world.getBlockState(pos.down()).func_224755_d(world, pos.down(), Direction.UP)){
+							if(world.getBlockState(pos.down()).isSolidSide(world, pos.down(), Direction.UP)){
 								
 								// Check the light level from nearby blocks
 								if(world.getLightFor(LightType.BLOCK, pos) < 8){

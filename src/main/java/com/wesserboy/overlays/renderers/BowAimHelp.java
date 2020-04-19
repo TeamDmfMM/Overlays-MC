@@ -1,8 +1,11 @@
 package com.wesserboy.overlays.renderers;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.Tessellator;
 import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -159,7 +162,7 @@ public class BowAimHelp {
 				
 				GlStateManager.enableColorMaterial();
 				
-				GlStateManager.translatef(30F, mc.mainWindow.getScaledHeight() - 15F, 50F);
+				GlStateManager.translatef(30F, mc.getMainWindow().getScaledHeight() - 15F, 50F);
 				GlStateManager.scalef((float)(-30), (float)30, (float)30);
 				
 				GlStateManager.rotatef(-player.rotationPitch, 1, 0, 0);
@@ -181,7 +184,7 @@ public class BowAimHelp {
 					// Render the target
 					GlStateManager.enableAlphaTest();
 					GlStateManager.enableBlend();
-					GlStateManager.enableNormalize();
+					GlStateManager.enableRescaleNormal();
 					
 					// Scale down entities that are too large (looking at you ender dragon >:( )
 					AxisAlignedBB renderBox = target.getRenderBoundingBox();
@@ -189,7 +192,11 @@ public class BowAimHelp {
 					GlStateManager.scaled(scale, scale, scale);
 					
 					if(!(target instanceof FallingBlockEntity)){
-						mc.getRenderManager().renderEntity(target, 0F, 0F, 0F, 0F, 1F, false);
+						// Display Entity On Screen
+						IRenderTypeBuffer.Impl bufferImpl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
+						int light = mc.getRenderManager().getPackedLight(target, event.getPartialTicks());
+						mc.getRenderManager().renderEntityStatic(target, 0F, 0F, 0F, 0F, 1F, new MatrixStack(), bufferImpl, light);
+						bufferImpl.finish();
 					}else{
 						FallingBlockEntity blockEntity = (FallingBlockEntity) target;
 						BlockState state = blockEntity.getBlockState();
@@ -197,20 +204,29 @@ public class BowAimHelp {
 						
 						if(block.hasTileEntity(state)){
 							if(state.getRenderType() == BlockRenderType.MODEL){
-								mc.getRenderManager().renderEntity(target, 0F, 0F, 0F, 0F, 1F, false);
+								int light = mc.getRenderManager().getPackedLight(target, event.getPartialTicks());
+								mc.getRenderManager().renderEntityStatic(target, 0F, 0F, 0F, 0F, 1F, new MatrixStack(), mc.getRenderTypeBuffers().getBufferSource(), light);
 							}
 							TileEntity tile = player.world.getTileEntity(((BlockRayTraceResult) theArrow.getHit()).getPos());
 							if(tile != null){
 								if(TileEntityRendererDispatcher.instance.getRenderer(tile) != null){
-									TileEntityRendererDispatcher.instance.render(tile, -0.5D, 0D, -0.5D, event.getPartialTicks());
+									MatrixStack matrixStack = new MatrixStack();
+									matrixStack.translate(-0.5D, 0, -0.5D);
+									TileEntityRendererDispatcher.instance.renderTileEntity(tile, event.getPartialTicks(), matrixStack, mc.getRenderTypeBuffers().getBufferSource());
 									GlStateManager.disableFog();
 								}
 							}
 						}else{
-							mc.getRenderManager().renderEntity(target, 0F, 0F, 0F, 0F, 1F, false);
+							int light = mc.getRenderManager().getPackedLight(target, event.getPartialTicks());
+							GlStateManager.disableLighting();
+							IRenderTypeBuffer.Impl bufferImpl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
+							mc.getRenderManager().renderEntityStatic(target, 0F, 0F, 0F, 0F, 1F, new MatrixStack(), bufferImpl, light);
+							bufferImpl.finish();
+							GlStateManager.enableLighting();
 						}
 					}
-					
+
+					/*MatrixStack stack = new MatrixStack();
 					if(!(target instanceof FallingBlockEntity)){
 						// Get the position where the target was hit
 						Vec3d[] path = theArrow.getPath();
@@ -222,25 +238,30 @@ public class BowAimHelp {
 						
 						if(actHitCoords != null){ // This should not be possible, however the ender dragon sometimes manages to do this...
 							// Draw the arrow at that location
-							GlStateManager.translated(-(target.posX - actHitCoords.getHitVec().x), -(target.posY - actHitCoords.getHitVec().y), -(target.posZ - actHitCoords.getHitVec().z));
+							stack.scale(0.5f, 0.5f, 0.5f);
+							stack.translate(-(target.getPosX() - actHitCoords.getHitVec().x), -(target.getPosY() - actHitCoords.getHitVec().y), -(target.getPosZ() - actHitCoords.getHitVec().z));
 						}
 					}else{
 						BlockPos pos = ((BlockRayTraceResult) hit).getPos();
 						GlStateManager.translatef(-0.5f, 0, -0.5f);
 						GlStateManager.translated(-(pos.getX() - hit.getHitVec().x), -(pos.getY() - hit.getHitVec().y), -(pos.getZ() - hit.getHitVec().z));
 					}
-					mc.getRenderManager().renderEntity(fakeArrow, 0F, 0F, 0F, 0F, 1F, false);
+
+					int light = mc.getRenderManager().getPackedLight(fakeArrow, event.getPartialTicks());
+					IRenderTypeBuffer.Impl bufferImpl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
+					mc.getRenderManager().renderEntityStatic(fakeArrow, 0F, 0F, 0F, 0F, 1F, stack, mc.getRenderTypeBuffers().getBufferSource(), light);
+					bufferImpl.finish();*/
 				}
 				
 				
 				GlStateManager.disableAlphaTest();
 				GlStateManager.disableBlend();
-				GlStateManager.disableNormalize();
+				GlStateManager.disableRescaleNormal();
 				
 				mc.getRenderManager().setRenderShadow(true);
 				RenderHelper.disableStandardItemLighting();
 				
-		        mc.gameRenderer.disableLightmap();
+		        mc.gameRenderer.getLightTexture().disableLightmap();
 
 				GlStateManager.popMatrix();
 			}

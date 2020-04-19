@@ -75,8 +75,8 @@ public class ChunkOverlay {
 					// Green mesh
 					GL11.glColor3f(0F, 1F, 0F);
 					
-					int minY = (int) (((int) player.posY) - 5);
-					int maxY = (int) (((int) player.posY) + 5);
+					int minY = (int) (((int) player.getPosition().getY()) - 5);
+					int maxY = (int) (((int) player.getPosition().getY()) + 5);
 					
 					// Vertical
 					for(int i = minY; i <= maxY; i++){

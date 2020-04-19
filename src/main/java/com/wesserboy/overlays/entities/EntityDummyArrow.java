@@ -7,6 +7,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -46,8 +47,9 @@ public class EntityDummyArrow extends AbstractArrowEntity{
 	private void calcPath(){
 		ArrayList<Vec3d> path = new ArrayList<Vec3d>();
 		
-		while(!this.hasHit && this.posY > 0){
-			Vec3d pos = new Vec3d(this.posX, this.posY, this.posZ);
+		while(!this.hasHit && this.getPosition().getY() > 0){
+			BlockPos pos2 = this.getPosition();
+			Vec3d pos = new Vec3d(pos2.getX(), pos2.getY(), pos2.getZ());
 			path.add(pos);
 			this.tick();
 		}

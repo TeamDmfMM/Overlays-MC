@@ -6,5 +6,5 @@
     "key.wesserboysoverlays.slimechunkoverlay": "Slime Chunk Overlay",
 
     "_comment": "Error messages",
-    "message.slimechunk.multiplayer": "This overlay is unavailible in multiplayer, sorry for the inconvenience!"
+    "message.slimechunk.multiplayer": "Please set the world seed to use this overlay in multiplayer, sorry for the inconvenience!"
 }
